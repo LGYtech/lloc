@@ -9,6 +9,11 @@ import (
 
 var localizations map[string]map[string]string
 
+// Initialize Initializes size for map
+func Initialize(size int) {
+	localizations = make(map[string]map[string]string, size)
+}
+
 // LoadFromFile Loads file content to related language code
 func LoadFromFile(languageCode string, filePath string) *lgo.OperationResult {
 	data, err := ioutil.ReadFile(filePath)
