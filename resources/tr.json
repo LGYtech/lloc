@@ -1,3 +1,5 @@
 {
-    "test": "Merhaba"
+    "hello": "Merhaba",
+    "goodbye":"Güle güle",
+    "onlyintr":"The resource"
 }
