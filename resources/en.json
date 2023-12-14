@@ -1,3 +1,4 @@
 {
-    "test": "Hello"
+    "hello": "Hello",
+    "goodbye":"Goodbye"
 }

@@ -2,45 +2,71 @@ package lloc
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
+	"sync"
 
 	"github.com/LGYtech/lgo"
 )
 
-var localizations map[string]map[string]string
-var defaultLanguageCode string
+var (
+	localizations        map[string]map[string]string
+	fallbackLanguageCode string
+	mutex                sync.RWMutex
+)
 
-// Initialize Initializes size for map
-func Initialize(size int) {
-	localizations = make(map[string]map[string]string, size)
+// Initialize
+func init() {
+	localizations = make(map[string]map[string]string)
 }
 
-// SetDefaultLanguageCode Sets default language code
-func SetDefaultLanguageCode(languageCode string) {
-	defaultLanguageCode = languageCode
+// SetFallbackLanguageCode Sets default language code
+func SetFallbackLanguageCode(languageCode string) {
+	fallbackLanguageCode = languageCode
 }
 
 // LoadFromFile Loads file content to related language code
 func LoadFromFile(languageCode string, filePath string) *lgo.OperationResult {
-	data, err := ioutil.ReadFile(filePath)
+	mutex.Lock()
+	// Read file
+	data, err := os.ReadFile(filePath)
 	if err != nil {
+		mutex.Unlock()
 		return lgo.NewFailureWithReturnObject(err)
 	}
+	// Read file content
 	var keyValues map[string]string
 	err = json.Unmarshal(data, &keyValues)
 	if err != nil {
+		mutex.Unlock()
 		return lgo.NewFailureWithReturnObject(err)
 	}
-	localizations[languageCode] = keyValues
+	// Add file content
+	if _, exists := localizations[languageCode]; !exists {
+		localizations[languageCode] = make(map[string]string)
+	}
+	for key, value := range keyValues {
+		localizations[languageCode][key] = value
+	}
+	mutex.Unlock()
 	return lgo.NewSuccess(nil)
 }
 
 // Get Returns requested localization value
 func Get(key string, languageCode string) string {
-	return localizations[languageCode][key]
+	mutex.RLock()
+	var value string
+	if _, exists := localizations[languageCode][key]; !exists {
+		value = localizations[fallbackLanguageCode][key]
+	} else {
+		value = localizations[languageCode][key]
+	}
+	mutex.RUnlock()
+	return value
 }
 
-// Getd Returns requested localization value with default language code
-func Getd(key string) string {
-	return localizations[defaultLanguageCode][key]
+// Reset localizations
+func Reset() {
+	mutex.Lock()
+	localizations = make(map[string]map[string]string)
+	mutex.Unlock()
 }
